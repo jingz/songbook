@@ -1,0 +1,314 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8">
+		<link rel="stylesheet" href="/style/style.css" type="text/css" media="screen" charset="utf-8">
+		<script src="jquery.js" type="text/javascript" charset="utf-8"></script>
+		<script src="underscore-1.2.3.js" type="text/javascript" charset="utf-8"></script>
+		<script src="knockout-2.0.0.debug.js" type="text/javascript" charset="utf-8"></script>
+		<script src="integrate-undercore-with-knockout.js" type="text/javascript" charset="utf-8"></script>
+
+		<script type="text/javascript" charset="utf-8">
+		  // global notification widget
+			var Flash = {
+				view: "set an element on init",
+				show: function(obj){
+					var args = $.extend({
+							message: '',
+							duration: 1000,
+							persist: false, 
+							callback: false,
+							css: { backgroundColor: '#ddd' }
+					},obj)
+
+					if(args.persist)
+						this.view.html(args.message).css(args.css).animate({top: 0})	
+					else
+						this.view.html(args.message).css(args.css).animate({top: 0}).delay(args.duration).animate({top: -55})
+
+					if(typeof args.callback == "function"){
+							args.callback(view);	
+					}
+					
+				},
+				// manually close
+				close: function(){
+					this.view.animate({top: -55})
+				}
+			}
+		</script>
+
+		<script type="text/javascript" charset="utf-8">
+			// Constant ( global scope )
+			var CHORDTABS_URI = "http://chordtabs.in.th" 
+			var SEARCH_URI = CHORDTABS_URI + "/admin/ui/search.php"
+			var CHORD_URI = CHORDTABS_URI + "/song.php?song_id=" 
+			// Models decaration
+			// var Song = $.extend(Model,{
+			// 		url: CHORDTABS_URI,
+			// 		search: SEARCH_URI,
+			// 		chord: CHORD_URI,
+			// 		fetch_cord: function(id){
+			// 				return chord	
+			// 		}
+			// })
+
+			// util for extract table html to build json data
+			function chordtab_extract_data_from_html(html,word){
+				// filter header of result table out
+				var rows = $(html).find('tr:gt(0)')
+				var data = []
+				rows.each(function(i){
+					var song_name = '', artist = ''
+					song_name = $(this).find("td:eq(3)").text()
+					artist = $(this).find("td:eq(1)").text()
+					eval("var match = (song_name + artist).match(/" + word + "/gi)");
+					if(!match) return;
+					d = {
+						has_tab: false, // will be used in future
+						group: $(this).find("td:eq(0)").text(),
+						artist: artist,
+						alblum: $(this).find("td:eq(2)").text(),
+						song_name: song_name,
+						song_id: $(this).find("td:eq(3) a").attr("href").match(/song_id=(\d+)/)[1]
+					}		
+					// filter
+					data.push(d)
+				})
+
+				return data
+			}
+
+			// search 
+			function search(q){
+				 q = $.trim(q);
+				 // reset old result
+				 $("#song-viewport").html("")
+				 $.ajax({
+						url: SEARCH_URI,
+						data: 'xjxfun=writeSongDiv&xjxargs[]=' + encodeURI(q),
+						type: "POST",
+						error: function(){
+							console.log("server unreachable!")
+						},
+						beforeSend: function(){
+							$("#load").show()
+							// Flash.show({message: "♫ ... ♫",persist: true})
+						},
+						success: function(res){
+							$("#load").hide(0)
+								var content = res.documentElement.textContent
+								var data = chordtab_extract_data_from_html(content,q)
+								// TODO ui for not found
+								if(data.length == 0){
+									alert(q + " not found !")
+									return false;
+								}
+
+								// search for tab
+								var tabs;
+								$.ajax({
+									url: SEARCH_URI,
+									data: 'xjxfun=writeTabDiv&xjxargs[]=' + encodeURI(q),
+									async: false,
+									type: "POST",
+									success: function(res){
+										var content = res.documentElement.textContent
+										tabs = chordtab_extract_data_from_html(content,q)
+									}
+								});
+
+								var tabs = _.map(tabs,function(val,key,obj){ return obj[key].song_id })
+								for(var i in data){
+									if($.inArray(data[i].song_id,tabs) != -1) {
+										data[i].has_tab = true;
+									}		
+								}
+									
+								// knockout usage
+								ko.applyBindings({
+									songs: data,
+									update_seachbox: function(s,e){
+										// update sytle of selected song in the list
+										$("#song-viewport").find("*").removeClass("song-selected")
+										$(e.target).parent().addClass("song-selected")
+										
+										$("#q").val($(e.target).text())
+										$("#song-viewport").slideUp(500)
+									},
+									fetch_chord: function(s,e){
+									  this.update_seachbox(s,e);
+										var song_id = s.song_id
+										// Song.defer('fetch_chord')
+										$.ajax({
+											url: CHORD_URI + song_id,
+											data: 'xjxfun=getChord&xjxargs[]=' + encodeURI(song_id),
+											type:'post',
+											error: function(e){ console.log("fetch chord error") },
+											beforeSend: function(){
+												Flash.show({message: "♫ ... ♫",persist: true})
+											},
+											success: function(_res){
+												Flash.close()
+												// reset result viewport to show chord and tab
+												$("#chord").html('');
+												$("#main").html('');
+												$("#tab").html('');
+
+												if(s.has_tab){
+	 												$.ajax({
+														url: CHORD_URI + song_id,
+														data: 'xjxfun=getTabById&xjxargs[]=' + encodeURI(song_id) + "&xjxargs[]=Guitar&xjxargs[]=0",
+														type:'post',
+														success: function(res){
+															var content = $(res.documentElement.textContent)
+															var tab = $("#tab")
+															// tab.append($(content))
+															content.find('*').removeAttr('style')
+															// TODO hard code
+															var imgs = content.find("img")
+															if(imgs.length == 0){
+																	// it maybe flash		
+																	var flash = content.find("object")
+																	if(flash.length > 0){
+																		flash.each(function(){
+																			var embed = $(this).find("embed")
+																			var param = $(this).find("param")
+																			var src = embed.attr("src")
+																			var val = param.attr("value")
+																			embed.attr("src",src.replace(".",CHORDTABS_URI))
+																			param.attr("value",val.replace(".",CHORDTABS_URI))
+																		});
+																	}
+																	else{
+																		Flash.show({ message:"Not Found! Why?"})
+																	}
+															}
+															else{
+																imgs.each(function(){
+																	var src = $(this).attr("src")
+																	$(this).attr("src",src.replace(".",CHORDTABS_URI))
+																	// $(this).parent().addClass("tab")
+																})
+															}
+
+															tab.append(content)
+															tab.find("*").removeAttr('style')
+															tab.find('table').width("720px")
+														} // end success
+														
+													})
+												}
+
+												// upto chord closure
+												var content = _res.documentElement.textContent
+												// get image result first
+												var imgs = $(content).find("img")
+												if(imgs.length === 0){
+													// maybe flash
+													// try to get flash
+													// ex cash jason mraz song
+													var flash = $(content).find("object")
+													if(flash.length > 0){
+														flash.each(function(){
+															var embed = $(this).find("embed")
+															var src = embed.attr("src")
+															embed.attr("src",src.replace(".",CHORDTABS_URI))
+															$("#chord").append($(this))
+														});
+													}
+													else{
+														Flash.show({ message:" Not found ! Why ?"})
+													}
+												} // end if image.length === 0
+												else {
+													imgs.each(function(){
+														var src = $(this).attr("src");
+														var chords = [], main;
+														$(this).attr("src",src.replace(".",CHORDTABS_URI))
+														if(src.match(/song/)){
+															$(this).appendTo($("#main"))
+														} else{
+															$(this).appendTo($("#chord"))
+														}
+													})
+												}
+												// hardcode style
+												$("#chord,#main").find("img").css({"border-radius": "0.5em",borderColor: "#555"})
+											}
+										})
+
+										return false; // disable bubble
+									}
+							});
+						}
+				 })	
+			}
+
+			// init
+			$(document).ready(function(){
+				 $("#q").keyup(function(e){
+					  if( e.keyCode != 13 ) return;
+						var qry = $(this).val();
+						search(qry);
+						$(this).blur()
+					  return false;	 
+				 })
+				 .focus(function(){
+						$(this).val("").css({
+							textAlign: "left",
+							color: "#333"
+						}).unbind("focus")
+
+						$(this).focus(function(){
+							$("#song-viewport")	.slideDown()
+						})
+					})
+				 .dblclick(function(){
+					  $(this).val('')
+					})
+
+				 Flash.view = $("#global-notification-wrapper")
+
+				 // test flash
+				 // Flash.show({
+				 //  	message: 'Search there ➳ ',
+				 //  	duration: 3000
+				 // });
+
+			})
+		</script>
+
+		<script id="songs" type="text/html" charset="utf-8">
+			<% var n = 0;%>
+			<ul id="song-list">
+			<% _.each(songs,function(s){ %>	
+				<li class='<%= n++%2 == 0 ? "even" : "odd" %>'>
+					<a href='#<%= s.song_id %>' data-bind="click: function(data,event){ fetch_chord(s,event) }">
+						<%= s.artist %> : <%= s.song_name %><%= s.has_tab ? "♮" : "" %>
+					</a>
+				</li>
+			<% }) %>
+			</ul>
+		</script>
+
+		<title>Chord Tab Thai</title>
+	</head>
+	<body>
+		<div id="container">
+			<div id="global-notification-wrapper"> </div>
+			<div id="search_wrapper">
+					<input id='q' type="text" title="Enter for searching :-)" placeholder="Search for Song / Artist" style='color:#888;text-align:right' />
+					<div id="load"> ♪ ...	</div>
+					<div id="song-viewport" class='letterpress' data-bind="template: 'songs'"> </div>
+			</div>
+			<div id="chord-wrapper">
+				<div id="chord"></div>
+				<div id="main"></div>
+			</div>
+			<div class="clear"></div>
+			<div id="tab"></div>
+			<div class="clear"></div>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "Chord Tab",
+  "description": "Chord Tab is an App that help to search for chord and tab by with powered by chordtabs.in.th",
+  "version": "1",
+  "app": {
+    "launch": {
+      "local_path": "index.html"
+    }
+  },
+  "icons": {
+    "16": "note_16.png",
+    "128": "note_128.png"
+  },
+	"permissions":[
+		"http://chordtabs.in.th/*"
+  ]
+}
