@@ -3,11 +3,12 @@
 	<head>
 		<meta http-equiv="content-type" content="text/html; charset=utf-8">
 		<link rel="stylesheet" href="/style/style.css" type="text/css" media="screen" charset="utf-8">
+		<script src="db.js" type="text/javascript" charset="utf-8"></script>
 		<script src="jquery.js" type="text/javascript" charset="utf-8"></script>
 		<script src="underscore-1.2.3.js" type="text/javascript" charset="utf-8"></script>
 		<script src="knockout-2.0.0.debug.js" type="text/javascript" charset="utf-8"></script>
 		<script src="integrate-undercore-with-knockout.js" type="text/javascript" charset="utf-8"></script>
-
+		<script src="song_list_controller.js" type="text/javascript" charset="utf-8"></script>		
 		<script type="text/javascript" charset="utf-8">
 			// TODO rewrite it in mvc concept
 		  // global notification widget
@@ -41,9 +42,9 @@
 
 		<script type="text/javascript" charset="utf-8">
 			// Constant ( global scope )
-			var CHORDTABS_URI = "http://chordtabs.in.th" 
-			var SEARCH_URI = CHORDTABS_URI + "/admin/ui/search.php"
-			var CHORD_URI = CHORDTABS_URI + "/song.php?song_id=" 
+			var CHORDTABS_URI = "http://chordtabs.in.th";
+			var SEARCH_URI = CHORDTABS_URI + "/admin/ui/search.php";
+			var CHORD_URI = CHORDTABS_URI + "/song.php?song_id="; 
 			// Models decaration
 			// var Song = $.extend(Model,{
 			// 		url: CHORDTABS_URI,
@@ -65,9 +66,10 @@
 					artist = $(this).find("td:eq(1)").text()
 					eval("var match = (song_name + artist).match(/" + word + "/gi)");
 					if(!match) return;
+					// data model
 					d = {
 						has_tab: false, // will be used in future
-						group: $(this).find("td:eq(0)").text(),
+						song_group: $(this).find("td:eq(0)").text(),
 						artist: artist,
 						alblum: $(this).find("td:eq(2)").text(),
 						song_name: song_name,
@@ -77,14 +79,31 @@
 					data.push(d)
 				})
 
-				return data
+				return data;
 			}
+
+			// function routes(r){
+			//    r = $.trim(r)	
+			// 	 if(r == ":recent") 
+			// 			fetch_recent();
+			// 	 elseif(r == ":hitz")
+			// 		  fetch_hitz();
+			// 	 else
+			// 			search(r)		 
+			// }
 
 			// search 
 			function search(q){
 				 q = $.trim(q);
+				 // implement :recent, :hitz commands
+				 if(q == ":recent"){
+						SongListController.fetch_recent(); 
+						return true;
+				 } 
+				 // elseif(q == ":hitz") fetch_hitz();
 				 // reset old result
 				 $("#song-viewport").html("")
+				 // songs = Song.search(q)
 				 $.ajax({
 						url: SEARCH_URI,
 						data: 'xjxfun=writeSongDiv&xjxargs[]=' + encodeURI(q),
@@ -106,16 +125,16 @@
 									return false;
 								}
 
-								// search for tab
+								// search for tab and wait for sucess 
 								var tabs;
 								$.ajax({
 									url: SEARCH_URI,
 									data: 'xjxfun=writeTabDiv&xjxargs[]=' + encodeURI(q),
-									async: false,
+									async: false, 
 									type: "POST",
 									success: function(res){
-										var content = res.documentElement.textContent
-										tabs = chordtab_extract_data_from_html(content,q)
+										var content = res.documentElement.textContent;
+										tabs = chordtab_extract_data_from_html(content,q);
 									}
 								});
 
@@ -123,125 +142,12 @@
 								for(var i in data){
 									if($.inArray(data[i].song_id,tabs) != -1) {
 										data[i].has_tab = true;
-									}		
-								}
-									
-								// knockout usage
-								ko.applyBindings({
-									songs: data,
-									update_seachbox: function(s,e){
-										// update sytle of selected song in the list
-										$("#song-viewport").find("*").removeClass("song-selected")
-										$(e.target).parent().addClass("song-selected")
-										
-										$("#q").val($(e.target).text())
-										$("#song-viewport").slideUp(500)
-									},
-									fetch_chord: function(s,e){
-									  this.update_seachbox(s,e);
-										var song_id = s.song_id
-										// Song.defer('fetch_chord')
-										$.ajax({
-											url: CHORD_URI + song_id,
-											data: 'xjxfun=getChord&xjxargs[]=' + encodeURI(song_id),
-											type:'post',
-											error: function(e){ console.log("fetch chord error") },
-											beforeSend: function(){
-												Flash.show({message: "♫ ... ♫",persist: true})
-											},
-											success: function(_res){
-												Flash.close()
-												// reset result viewport to show chord and tab
-												$("#chord").html('');
-												$("#main").html('');
-												$("#tab").html('');
-
-												if(s.has_tab){
-	 												$.ajax({
-														url: CHORD_URI + song_id,
-														data: 'xjxfun=getTabById&xjxargs[]=' + encodeURI(song_id) + "&xjxargs[]=Guitar&xjxargs[]=0",
-														type:'post',
-														success: function(res){
-															var content = $(res.documentElement.textContent)
-															var tab = $("#tab")
-															// tab.append($(content))
-															content.find('*').removeAttr('style')
-															// TODO hard code
-															var imgs = content.find("img")
-															if(imgs.length == 0){
-																	// it maybe flash		
-																	var flash = content.find("object")
-																	if(flash.length > 0){
-																		flash.each(function(){
-																			var embed = $(this).find("embed")
-																			var param = $(this).find("param")
-																			var src = embed.attr("src")
-																			var val = param.attr("value")
-																			embed.attr("src",src.replace(".",CHORDTABS_URI))
-																			param.attr("value",val.replace(".",CHORDTABS_URI))
-																		});
-																	}
-																	else{
-																		Flash.show({ message:"Not Found! Why?"})
-																	}
-															}
-															else{
-																imgs.each(function(){
-																	var src = $(this).attr("src")
-																	$(this).attr("src",src.replace(".",CHORDTABS_URI))
-																	// $(this).parent().addClass("tab")
-																})
-															}
-
-															tab.append(content)
-															tab.find("*").removeAttr('style')
-															tab.find('table').width("720px")
-														} // end success
-														
-													})
-												}
-
-												// upto chord closure
-												var content = _res.documentElement.textContent
-												// get image result first
-												var imgs = $(content).find("img")
-												if(imgs.length === 0){
-													// maybe flash
-													// try to get flash
-													// ex cash jason mraz song
-													var flash = $(content).find("object")
-													if(flash.length > 0){
-														flash.each(function(){
-															var embed = $(this).find("embed")
-															var src = embed.attr("src")
-															embed.attr("src",src.replace(".",CHORDTABS_URI))
-															$("#chord").append($(this))
-														});
-													}
-													else{
-														Flash.show({ message:" Not found ! Why ?"})
-													}
-												} // end if image.length === 0
-												else {
-													imgs.each(function(){
-														var src = $(this).attr("src");
-														var chords = [], main;
-														$(this).attr("src",src.replace(".",CHORDTABS_URI))
-														if(src.match(/song/)){
-															$(this).appendTo($("#main"))
-														} else{
-															$(this).appendTo($("#chord"))
-														}
-													})
-												}
-												// hardcode style
-												$("#chord,#main").find("img").css({"border-radius": "0.5em",borderColor: "#555"})
-											}
-										})
-
-										return false; // disable bubble
 									}
-							});
+								}
+
+								// render
+								// knockout usage
+								SongListController.binding(data);
 						}
 				 })	
 			}
@@ -256,28 +162,30 @@
 					  return false;	 
 				 })
 				 .focus(function(){
-						$(this).val("").css({
-							textAlign: "left",
-							color: "#333"
-						}).unbind("focus")
+						$("#song-viewport").slideDown()
+					  // first exec
+						// $(this).val("").css({
+						// 	textAlign: "left",
+						// 	color: "#333"
+						// }).unbind("focus")
 
-						$(this).focus(function(){
-							$("#song-viewport")	.slideDown()
-						})
+						// $(this).focus(function(){
+						// })
 					})
 				 .dblclick(function(){
 					  $(this).val('')
 					})
 
+				 // setup flash element
 				 Flash.view = $("#global-notification-wrapper")
-
-				 // test flash
-				 // Flash.show({
-				 //  	message: 'Search there ➳ ',
-				 //  	duration: 3000
-				 // });
-
-			})
+				 Song.all(function(rec){
+						 if(rec.length > 0){
+								// update recent
+								$("#q").val(":recent")
+								SongListController.fetch_recent();
+						 }		 
+				 })
+			});
 		</script>
 
 		<script id="songs" type="text/html" charset="utf-8">
@@ -293,15 +201,16 @@
 			</ul>
 		</script>
 
-		<title>Chord Tab Thai</title>
+		<title>Chord Tab</title>
 	</head>
 	<body>
 		<div id="container">
 			<div id="global-notification-wrapper"> </div>
 			<div id="search_wrapper">
-					<input id='q' type="text" title="Enter for searching :-)" placeholder="Search for Song / Artist" style='color:#888;text-align:right' />
+					<input id='q' type="text" title="Enter (Song / Artist) for searching :-)" placeholder="Search for Song / Artist" style='color:#888;' />
+
 					<div id="load"> ♪ ...	</div>
-					<div id="song-viewport" class='letterpress' data-bind="template: 'songs'"> </div>
+					<div id="song-viewport" class='letterpress' data-bind="template: 'songs'"></div>
 			</div>
 			<div id="chord-wrapper">
 				<div id="chord"></div>
