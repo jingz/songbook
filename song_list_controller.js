@@ -15,15 +15,16 @@ var SongListController = {
 				this.update_seachbox(s,e);
 				var song_id = s.song_id
 				$.ajax({
-					url: CHORD_URI + song_id,
-					data: 'xjxfun=getChord&xjxargs[]=' + encodeURI(song_id),
-					type:'post',
+					url: CHORD_URI + song_id + "&posttype=webmaster&chord=yes",
+					data: 'xjxfun=getChord&xjxr=' + (new Date().getTime()),
+					type: 'post',
+                    contentType: "text/html",
 					error: function(e){ console.log("fetch chord error") },
 					beforeSend: function(){
 						Flash.show({message: "♫ ... ♫",persist: true})
 					},
 					success: function(_res){
-						Flash.close()
+						Flash.close();
 						// reset result viewport to show chord and tab
 
 						$("#chord").html('');
@@ -37,7 +38,7 @@ var SongListController = {
 								data: 'xjxfun=getTabById&xjxargs[]=' + encodeURI(song_id) + "&xjxargs[]=Guitar&xjxargs[]=0",
 								type: 'post',
 								success: function(res){
-									var content = $(res.documentElement.textContent)
+									var content = $(res.documentElement.textContent);
 									var tab = $("#tab")
 									// tab.append($(content))
 									content.find('*').removeAttr('style')
@@ -48,24 +49,24 @@ var SongListController = {
 											var flash = content.find("object")
 											if(flash.length > 0){
 												flash.each(function(){
-													var embed = $(this).find("embed")
-													var param = $(this).find("param")
-													var src = embed.attr("src")
-													var val = param.attr("value")
+													var embed = $(this).find("embed");
+													var param = $(this).find("param");
+													var src = embed.attr("src");
+													var val = param.attr("value");
 													embed.attr("src",src.replace(".",CHORDTABS_URI))
 													param.attr("value",val.replace(".",CHORDTABS_URI))
 												});
 											}
 											else{
-												Flash.show({ message:"Not Found! Why?"})
+												Flash.show({ message:"Not Found! Why?"});
 											}
 									}
 									else{
 										imgs.each(function(){
-											var src = $(this).attr("src")
-											$(this).attr("src",src.replace(".",CHORDTABS_URI))
+											var src = $(this).attr("src");
+											$(this).attr("src",src.replace(".",CHORDTABS_URI));
 											// $(this).parent().addClass("tab")
-										})
+										});
 									}
 
 									tab.append(content)
@@ -77,9 +78,10 @@ var SongListController = {
 						}
 
 						// upto chord closure
-						var content = _res.documentElement.textContent
+						// var content = _res.documentElement.textContent;
+						var content = $("#songMain", _res);
 						// get image result first
-						var imgs = $(content).find("img")
+						var imgs = $(content).find("img");
 						if(imgs.length === 0){
 							// maybe flash
 							// try to get flash
@@ -87,30 +89,29 @@ var SongListController = {
 							var flash = $(content).find("object")
 							if(flash.length > 0){
 								flash.each(function(){
-									var embed = $(this).find("embed")
-									var src = embed.attr("src")
-									embed.attr("src",src.replace(".",CHORDTABS_URI))
-									$("#chord").append($(this))
+									var embed = $(this).find("embed");
+									var src = embed.attr("src");
+									embed.attr("src",src.replace(".",CHORDTABS_URI));
+									$("#chord").append($(this));
 								});
-							}
-							else{
-								Flash.show({ message:" Not found ! Why ?"})
+							} else{
+								Flash.show({ message:" Not found ! Why ?"});
 							}
 						} // end if image.length === 0
 						else {
 							imgs.each(function(){
 								var src = $(this).attr("src");
 								var chords = [], main;
-								$(this).attr("src",src.replace(".",CHORDTABS_URI))
+								$(this).attr("src", src.replace(".", CHORDTABS_URI))
 								if(src.match(/song/)){
-									$(this).appendTo($("#main"))
+									$(this).appendTo($("#main"));
 								} else{
-									$(this).appendTo($("#chord"))
+									$(this).appendTo($("#chord"));
 								}
 							})
 						}
-						// hardcode style
-						$("#chord,#main").find("img").css({"border-radius": "0.5em",borderColor: "#555"})
+						// TODO hardcode style
+						$("#chord, #main").find("img").css({"border-radius": "0.5em",borderColor: "#555"})
 					}
 				})
 				return false; // disable event bubble
@@ -120,13 +121,13 @@ var SongListController = {
 	binding: function  (data) {
 		ko.applyBindings($.extend({
 			songs: data
-		},this.action))
+		}, this.action));
 	},
 
 	fetch_recent: function(){
 		var self = this;
 		Song.all(function(rec){
-				if(rec.length > 0) self.binding(rec)
-		})	
+				if(rec.length > 0) self.binding(rec);
+		});	
 	}
 }
