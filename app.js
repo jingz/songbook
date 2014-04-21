@@ -31,6 +31,7 @@ var Flash = {
 // Constant ( global scope )
 var CHORDTABS_URI = "http://chordtabs.in.th";
 var SEARCH_URI = CHORDTABS_URI + "/admin/ui/search.php";
+var RANDOM_URI = CHORDTABS_URI + "/admin/ui/randomsong.php";
 var CHORD_URI = CHORDTABS_URI + "/song.php?song_id="; 
 // Models decaration
 // var Song = $.extend(Model,{
@@ -56,7 +57,7 @@ function chordtab_extract_data_from_html(html,word){
         // eval("var match = (song_name + artist).match(/" + word + "/gi)");
         if(!match) return;
         // data model
-        d = {
+        var d = {
             has_tab: false, // will be used in future
             song_group: $(this).find("td:eq(0)").text(),
             artist: artist,
@@ -65,10 +66,9 @@ function chordtab_extract_data_from_html(html,word){
             song_id: $(this).find("td:eq(3) a").attr("href").match(/song_id=(\d+)/)[1]
         }		
         // filter
-        data.push(d)
+        data.push(d);
     });
 
-    console.log(data)
     return data;
 }
 
@@ -91,8 +91,12 @@ function search(q){
             return true;
      } 
      // elseif(q == ":hitz") fetch_hitz();
+     if(q == ':random'){
+            fetch_random_songs();
+            return true;
+     }
+
      // reset old result
-     $("#song-viewport").html("")
      // songs = Song.search(q)
      $.ajax({
             url: SEARCH_URI,
@@ -102,13 +106,14 @@ function search(q){
                 console.log("server unreachable!")
             },
             beforeSend: function(){
+                $("#song-viewport").html("");
                 $("#load").show()
                 // Flash.show({message: "♫ ... ♫",persist: true})
             },
             success: function(res){
-                $("#load").hide(0)
-                    var content = res.documentElement.textContent
-                    var data = chordtab_extract_data_from_html(content,q)
+                    $("#load").hide(0);
+                    var content = res.documentElement.textContent;
+                    var data = chordtab_extract_data_from_html(content,q);
                     // TODO ui for not found
                     if(data.length == 0){
                         alert(q + " not found !")
@@ -128,7 +133,7 @@ function search(q){
                         }
                     });
 
-                    var tabs = _.map(tabs,function(val,key,obj){ return obj[key].song_id });
+                    tabs = _.map(tabs,function(val,key,obj){ return obj[key].song_id });
                     for(var i in data){
                         if($.inArray(data[i].song_id,tabs) != -1) {
                             data[i].has_tab = true;
@@ -139,7 +144,56 @@ function search(q){
                     // knockout usage
                     SongListController.binding(data);
             }
-     })	
+     });
+}
+
+function fetch_random_songs () {
+     $.ajax({
+            url: RANDOM_URI,
+            data: 'xjxfun=readList',
+            type: "POST",
+            error: function(){
+                console.log("server unreachable!");
+            },
+            beforeSend: function(){
+                $("#song-viewport").html("");
+                $("#load").show();
+                // Flash.show({message: "♫ ... ♫",persist: true})
+            },
+            success: function(res){
+                    $("#load").hide(0);
+                    var content = res.documentElement.textContent;
+                    // var data = chordtab_extract_data_from_html(content,q);
+                    var data = [];
+                    $(content).find('a').each(function  () {
+                        // <a href="http://www.chordtabs.in.th/song.php?posttype=webmaster&song_id=5145 "  target="_blank">Sunshine : เรื่องเก่า เศร้าใหม่ </a>
+                        var tmp = $(this).text().split(':');
+                        var href = $(this).attr('href');
+                        var artist = tmp[0].trim();
+                        var song_name = tmp[1].trim();
+                        var song_id = href.match(/\d+/)[0];
+                        var d = {
+                            has_tab: false, // will be used in future
+                            song_group: null,
+                            artist: artist,
+                            alblum: null,
+                            song_name: song_name,
+                            song_id: song_id
+                        }		
+                        // filter
+                        data.push(d);
+                    });
+
+
+                    // TODO ui for not found
+                    if(data.length == 0){
+                        alert("Error Random !")
+                        return false;
+                    }
+
+                    SongListController.binding(data);
+            }
+     });
 }
 
 // init
@@ -167,11 +221,11 @@ $(document).ready(function(){
         })
 
      // setup flash element
-     Flash.view = $("#global-notification-wrapper")
+     Flash.view = $("#global-notification-wrapper");
      Song.all(function(rec){
              if(rec.length > 0){
                     // update recent
-                    $("#q").val(":recent")
+                    $("#q").val(":recent");
                     SongListController.fetch_recent();
              }		 
      })
