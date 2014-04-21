@@ -32,7 +32,8 @@ var SongListController = {
 						$("#tab").html('');
 
 						// fetch tab if has tab in the song, async
-						if(s.has_tab){
+                        try {
+						// if(s.has_tab){
 							$.ajax({
 								url: CHORD_URI + song_id,
 								data: 'xjxfun=getTabById&xjxargs[]=' + encodeURI(song_id) + "&xjxargs[]=Guitar&xjxargs[]=0",
@@ -75,7 +76,8 @@ var SongListController = {
 								} // end success
 								
 							})
-						}
+						//}
+                        } catch(e) { console.error(e); }
 
 						// upto chord closure
 						// var content = _res.documentElement.textContent;

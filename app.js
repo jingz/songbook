@@ -32,6 +32,8 @@ var Flash = {
 var CHORDTABS_URI = "http://chordtabs.in.th";
 var SEARCH_URI = CHORDTABS_URI + "/admin/ui/search.php";
 var RANDOM_URI = CHORDTABS_URI + "/admin/ui/randomsong.php";
+var COOL_URI = CHORDTABS_URI + "/admin/ui/coolsong.php";
+var HIT_URI = CHORDTABS_URI + "/admin/ui/hitsong.php";
 var CHORD_URI = CHORDTABS_URI + "/song.php?song_id="; 
 // Models decaration
 // var Song = $.extend(Model,{
@@ -72,16 +74,6 @@ function chordtab_extract_data_from_html(html,word){
     return data;
 }
 
-// function routes(r){
-//    r = $.trim(r)	
-// 	 if(r == ":recent") 
-// 			fetch_recent();
-// 	 elseif(r == ":hitz")
-// 		  fetch_hitz();
-// 	 else
-// 			search(r)		 
-// }
-
 // search 
 function search(q){
      q = $.trim(q);
@@ -92,7 +84,17 @@ function search(q){
      } 
      // elseif(q == ":hitz") fetch_hitz();
      if(q == ':random'){
-            fetch_random_songs();
+            fetch_prepared_songs(RANDOM_URI);
+            return true;
+     }
+
+     if(q == ':hitz'){
+            fetch_prepared_songs(HIT_URI);
+            return true;
+     }
+
+     if(q == ':cool'){
+            fetch_prepared_songs(COOL_URI);
             return true;
      }
 
@@ -147,9 +149,9 @@ function search(q){
      });
 }
 
-function fetch_random_songs () {
+function fetch_prepared_songs (url) {
      $.ajax({
-            url: RANDOM_URI,
+            url: url,
             data: 'xjxfun=readList',
             type: "POST",
             error: function(){
@@ -167,27 +169,30 @@ function fetch_random_songs () {
                     var data = [];
                     $(content).find('a').each(function  () {
                         // <a href="http://www.chordtabs.in.th/song.php?posttype=webmaster&song_id=5145 "  target="_blank">Sunshine : เรื่องเก่า เศร้าใหม่ </a>
-                        var tmp = $(this).text().split(':');
-                        var href = $(this).attr('href');
-                        var artist = tmp[0].trim();
-                        var song_name = tmp[1].trim();
-                        var song_id = href.match(/\d+/)[0];
-                        var d = {
-                            has_tab: false, // will be used in future
-                            song_group: null,
-                            artist: artist,
-                            alblum: null,
-                            song_name: song_name,
-                            song_id: song_id
-                        }		
+                        try{
+                            var tmp = _.filter($(this).text().match(/[^:]+/g), function(r){ return !!r.trim()});
+                            var href = $(this).attr('href');
+                            var artist = tmp[0].trim();
+                            var song_name = tmp[1].trim();
+                            var song_id = href.match(/\d+/)[0];
+                            var d = {
+                                has_tab: false, // will be used in future
+                                song_group: null,
+                                artist: artist,
+                                alblum: null,
+                                song_name: song_name,
+                                song_id: song_id
+                            }		
+                            data.push(d);
+                        } 
+                        catch(e){ console.error(e) }
                         // filter
-                        data.push(d);
                     });
 
 
                     // TODO ui for not found
                     if(data.length == 0){
-                        alert("Error Random !")
+                        alert("No Songs !")
                         return false;
                     }
 
@@ -228,6 +233,30 @@ $(document).ready(function(){
                     $("#q").val(":recent");
                     SongListController.fetch_recent();
              }		 
-     })
+     });
+
+    $('#random').click(function(){
+        $('#q').val(':random');
+        var e = $.Event("keyup", { which: 13, keyCode: 13 });
+        $('#q').trigger(e);
+    });
+
+    $('#recent').click(function(){
+        $('#q').val(':recent');
+        var e = $.Event("keyup", { which: 13, keyCode: 13 });
+        $('#q').trigger(e);
+    });
+
+    $('#hitz').click(function(){
+        $('#q').val(':hitz');
+        var e = $.Event("keyup", { which: 13, keyCode: 13 });
+        $('#q').trigger(e);
+    });
+
+    $('#cool').click(function(){
+        $('#q').val(':cool');
+        var e = $.Event("keyup", { which: 13, keyCode: 13 });
+        $('#q').trigger(e);
+    });
 });
 
