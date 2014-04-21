@@ -52,17 +52,17 @@ var Song = {
 	update_if_exist_or_save: function  (obj) {
 		 // check whether song has alrealy exist
 		 this.save(obj,function  (err) {
-			  console.log(err.message)	
-        db.query("update songs set latest_playing = ? where song_id = ?",[Date(), obj.song_id])
+			  console.log(err.message);
+              db.query("update songs set latest_playing = ? where song_id = ?",[Date(), obj.song_id]);
 		 });
 	},
 
 	all: function (cb_rec) {
-		 db.query("select * from songs order by latest_playing desc limit 50",[],cb_rec) 
+		 db.query("select * from songs order by latest_playing",[],cb_rec);
 	},
 
 	_where: [],
 	where: function  (sql, params) {
-		this._where.push(sql)
+		this._where.push(sql);
 	}
 }
