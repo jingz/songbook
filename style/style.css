@@ -143,3 +143,12 @@ body{
 	color: #777;
 	text-shadow: 0 1px 0 #AAA, 0 -1px 0 #000;
 }
+
+.shortcut{
+    padding: 0.2em;
+    margin: 0.2em;
+    margin-right: 0.3em;
+    width: 50px;
+    text-align: center;
+    cursor: pointer;
+}
