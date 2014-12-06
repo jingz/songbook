@@ -31,7 +31,7 @@ body{
 	border: 3px solid #555;
 	border-top: 0px;
 	color: #777;
-	text-shadow: 0 1px 0 #AAA, 0 -1px 0 #000;
+	/* text-shadow: 0 1px 0 #AAA, 0 -1px 0 #000; */
 	border-bottom-left-radius: 10px;
 	border-bottom-right-radius: 10px;
 }
@@ -41,7 +41,7 @@ body{
 	display: none;
 	font-size: 2em;
 	color: #888;
-	text-shadow: 0 1px 0 #AAA, 0 -1px 0 #333;
+	/* text-shadow: 0 1px 0 #AAA, 0 -1px 0 #333; */
 }
 
 #main, #chord {
@@ -98,7 +98,7 @@ body{
 }
 
 #song-viewport a:hover{
-	color: orange;
+	color: black;
 }
 
 #q {
@@ -142,4 +142,13 @@ body{
 .letterpress{
 	color: #777;
 	text-shadow: 0 1px 0 #AAA, 0 -1px 0 #000;
+}
+
+.shortcut{
+    padding: 0.2em;
+    margin: 0.2em;
+    margin-right: 0.3em;
+    width: 50px;
+    text-align: center;
+    cursor: pointer;
 }

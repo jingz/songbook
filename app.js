@@ -31,6 +31,9 @@ var Flash = {
 // Constant ( global scope )
 var CHORDTABS_URI = "http://chordtabs.in.th";
 var SEARCH_URI = CHORDTABS_URI + "/admin/ui/search.php";
+var RANDOM_URI = CHORDTABS_URI + "/admin/ui/randomsong.php";
+var COOL_URI = CHORDTABS_URI + "/admin/ui/coolsong.php";
+var HIT_URI = CHORDTABS_URI + "/admin/ui/hitsong.php";
 var CHORD_URI = CHORDTABS_URI + "/song.php?song_id="; 
 // Models decaration
 // var Song = $.extend(Model,{
@@ -56,7 +59,7 @@ function chordtab_extract_data_from_html(html,word){
         // eval("var match = (song_name + artist).match(/" + word + "/gi)");
         if(!match) return;
         // data model
-        d = {
+        var d = {
             has_tab: false, // will be used in future
             song_group: $(this).find("td:eq(0)").text(),
             artist: artist,
@@ -65,22 +68,11 @@ function chordtab_extract_data_from_html(html,word){
             song_id: $(this).find("td:eq(3) a").attr("href").match(/song_id=(\d+)/)[1]
         }		
         // filter
-        data.push(d)
+        data.push(d);
     });
 
-    console.log(data)
     return data;
 }
-
-// function routes(r){
-//    r = $.trim(r)	
-// 	 if(r == ":recent") 
-// 			fetch_recent();
-// 	 elseif(r == ":hitz")
-// 		  fetch_hitz();
-// 	 else
-// 			search(r)		 
-// }
 
 // search 
 function search(q){
@@ -91,8 +83,22 @@ function search(q){
             return true;
      } 
      // elseif(q == ":hitz") fetch_hitz();
+     if(q == ':random'){
+            fetch_prepared_songs(RANDOM_URI);
+            return true;
+     }
+
+     if(q == ':hitz'){
+            fetch_prepared_songs(HIT_URI);
+            return true;
+     }
+
+     if(q == ':cool'){
+            fetch_prepared_songs(COOL_URI);
+            return true;
+     }
+
      // reset old result
-     $("#song-viewport").html("")
      // songs = Song.search(q)
      $.ajax({
             url: SEARCH_URI,
@@ -102,13 +108,14 @@ function search(q){
                 console.log("server unreachable!")
             },
             beforeSend: function(){
+                $("#song-viewport").html("");
                 $("#load").show()
                 // Flash.show({message: "♫ ... ♫",persist: true})
             },
             success: function(res){
-                $("#load").hide(0)
-                    var content = res.documentElement.textContent
-                    var data = chordtab_extract_data_from_html(content,q)
+                    $("#load").hide(0);
+                    var content = res.documentElement.textContent;
+                    var data = chordtab_extract_data_from_html(content,q);
                     // TODO ui for not found
                     if(data.length == 0){
                         alert(q + " not found !")
@@ -128,7 +135,7 @@ function search(q){
                         }
                     });
 
-                    var tabs = _.map(tabs,function(val,key,obj){ return obj[key].song_id });
+                    tabs = _.map(tabs,function(val,key,obj){ return obj[key].song_id });
                     for(var i in data){
                         if($.inArray(data[i].song_id,tabs) != -1) {
                             data[i].has_tab = true;
@@ -139,7 +146,59 @@ function search(q){
                     // knockout usage
                     SongListController.binding(data);
             }
-     })	
+     });
+}
+
+function fetch_prepared_songs (url) {
+     $.ajax({
+            url: url,
+            data: 'xjxfun=readList',
+            type: "POST",
+            error: function(){
+                console.log("server unreachable!");
+            },
+            beforeSend: function(){
+                $("#song-viewport").html("");
+                $("#load").show();
+                // Flash.show({message: "♫ ... ♫",persist: true})
+            },
+            success: function(res){
+                    $("#load").hide(0);
+                    var content = res.documentElement.textContent;
+                    // var data = chordtab_extract_data_from_html(content,q);
+                    var data = [];
+                    $(content).find('a').each(function  () {
+                        // <a href="http://www.chordtabs.in.th/song.php?posttype=webmaster&song_id=5145 "  target="_blank">Sunshine : เรื่องเก่า เศร้าใหม่ </a>
+                        try{
+                            var tmp = _.filter($(this).text().match(/[^:]+/g), function(r){ return !!r.trim()});
+                            var href = $(this).attr('href');
+                            var artist = tmp[0].trim();
+                            var song_name = tmp[1].trim();
+                            var song_id = href.match(/\d+/)[0];
+                            var d = {
+                                has_tab: false, // will be used in future
+                                song_group: null,
+                                artist: artist,
+                                alblum: null,
+                                song_name: song_name,
+                                song_id: song_id
+                            }		
+                            data.push(d);
+                        } 
+                        catch(e){ console.error(e) }
+                        // filter
+                    });
+
+
+                    // TODO ui for not found
+                    if(data.length == 0){
+                        alert("No Songs !")
+                        return false;
+                    }
+
+                    SongListController.binding(data);
+            }
+     });
 }
 
 // init
@@ -167,13 +226,37 @@ $(document).ready(function(){
         })
 
      // setup flash element
-     Flash.view = $("#global-notification-wrapper")
+     Flash.view = $("#global-notification-wrapper");
      Song.all(function(rec){
              if(rec.length > 0){
                     // update recent
-                    $("#q").val(":recent")
+                    $("#q").val(":recent");
                     SongListController.fetch_recent();
              }		 
-     })
+     });
+
+    $('#random').click(function(){
+        $('#q').val(':random');
+        var e = $.Event("keyup", { which: 13, keyCode: 13 });
+        $('#q').trigger(e);
+    });
+
+    $('#recent').click(function(){
+        $('#q').val(':recent');
+        var e = $.Event("keyup", { which: 13, keyCode: 13 });
+        $('#q').trigger(e);
+    });
+
+    $('#hitz').click(function(){
+        $('#q').val(':hitz');
+        var e = $.Event("keyup", { which: 13, keyCode: 13 });
+        $('#q').trigger(e);
+    });
+
+    $('#cool').click(function(){
+        $('#q').val(':cool');
+        var e = $.Event("keyup", { which: 13, keyCode: 13 });
+        $('#q').trigger(e);
+    });
 });
 

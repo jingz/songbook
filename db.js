@@ -58,7 +58,7 @@ var Song = {
 	},
 
 	all: function (cb_rec) {
-		 db.query("select * from songs order by latest_playing desc limit 50", [], cb_rec);
+		 db.query("select * from songs order by latest_playing",[],cb_rec);
 	},
 
 	_where: [],

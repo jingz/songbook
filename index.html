@@ -30,10 +30,19 @@
 		<div id="container">
 			<div id="global-notification-wrapper"> </div>
 			<div id="search_wrapper">
+                <div id="shortcut-warpper">
+                    <button id='recent' class='shortcut'>recent</button>
+                    <button id='random' class='shortcut'>random</button>
+                    <button id='hitz' class='shortcut'>hitz</button>
+                    <button id='cool' class='shortcut'>cool</button>
+                </div>
+                    <!--
+                    <button>reset</button>
+                    -->
 					<input id='q' type="text" title="Enter (Song / Artist) for searching :-)" placeholder="Search for Song / Artist" style='color:#888;' />
 
 					<div id="load"> ♪ ...	</div>
-					<div id="song-viewport" class='letterpress' data-bind="template: 'songs'"></div>
+					<div id="song-viewport" class='' data-bind="template: 'songs'"></div>
 			</div>
 			<div id="chord-wrapper">
 				<div id="chord"></div>
