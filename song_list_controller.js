@@ -82,6 +82,8 @@ var SongListController = {
 						var content = $("#songMain", _res);
 						// get image result first
 						var imgs = $(content).find("img");
+                        var chord_imgs = $("#righ_ads").find('img');
+                        imgs = imgs.concat(chord_imgs);
 						if(imgs.length === 0){
 							// maybe flash
 							// try to get flash
@@ -97,8 +99,7 @@ var SongListController = {
 							} else{
 								Flash.show({ message:" Not found ! Why ?"});
 							}
-						} // end if image.length === 0
-						else {
+						} else { // image.length > 0
 							imgs.each(function(){
 								var src = $(this).attr("src");
 								var chords = [], main;
