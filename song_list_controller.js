@@ -15,9 +15,9 @@ var SongListController = {
 				this.update_seachbox(s,e);
 				var song_id = s.song_id
 				$.ajax({
-					url: CHORD_URI + song_id + "&posttype=webmaster&chord=yes",
-					data: 'xjxfun=getChord&xjxr=' + (new Date().getTime()),
-					type: 'post',
+					url: CHORD_URI + song_id + "&chord=yes",
+					// data: 'xjxfun=getChord&xjxr=' + (new Date().getTime()),
+					type: 'get',
                     contentType: "text/html",
 					error: function(e){ console.log("fetch chord error") },
 					beforeSend: function(){
@@ -59,7 +59,8 @@ var SongListController = {
 												});
 											}
 											else{
-												Flash.show({ message:"Not Found! Why?"});
+                                                console.log('not found flash tab');
+												// Flash.show({ message:"Not Found! Why?"});
 											}
 									}
 									else{
@@ -81,11 +82,7 @@ var SongListController = {
 
 						// upto chord closure
 						// var content = _res.documentElement.textContent;
-						var content = $("#songMain", _res);
-						// get image result first
-						var imgs = $(content).find("img");
-                        var chord_imgs = $("#righ_ads").find('img');
-                        imgs = imgs.concat(chord_imgs);
+                        var imgs = $("img", _res);
 						if(imgs.length === 0){
 							// maybe flash
 							// try to get flash
@@ -99,7 +96,8 @@ var SongListController = {
 									$("#chord").append($(this));
 								});
 							} else{
-								Flash.show({ message:" Not found ! Why ?"});
+                                console.log('no found flash')
+								// Flash.show({ message:" Not found ! Why ?"});
 							}
 						} else { // image.length > 0
 							imgs.each(function(){
@@ -108,7 +106,7 @@ var SongListController = {
 								$(this).attr("src", src.replace(".", CHORDTABS_URI))
 								if(src.match(/song/)){
 									$(this).appendTo($("#main"));
-								} else{
+								} else if(src.match(/chord/)){
 									$(this).appendTo($("#chord"));
 								}
 							})

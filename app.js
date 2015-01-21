@@ -1,3 +1,55 @@
+window.LOCALSTORAGE_KEY = 'local_list';
+eval('window.' + LOCALSTORAGE_KEY + '= [];');
+console.log(window.local_list.length);
+window.test_db = function(){ var idx = parseInt((Math.random() * 15000)); return local_list[idx]; }
+window.restore_db = function(){ 
+    var data = JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY));
+    if(data) window.local_list = data;
+}
+restore_db();
+window.sync_song = function(){
+    $.ajax({
+        url: 'http://chordtabs.in.th/admin/ui/tablesort.php',
+        success: function(html) {
+            console.log('found rows', $('#song', html).find('tr').length);
+            console.log('parsing ... and saving ...');
+            var data = [];
+            /*
+                <tr >
+                <td align="center">11491</td>
+                <td>Big Ass</td>
+                <td>XL</td>
+                <td><a href="/song.php?song_id=26" target="_blank">ก่อนตาย</a></td>
+                <td><a href="/song.php?song_id=26" target="_blank"></a></td>
+                </tr>
+             */
+
+            $('#song', html).find('tr').each(function(){
+                var id = +$(this).find('td:eq(0)').text();
+                var artist = $(this).find('td:eq(1)').text();
+                var ab = $(this).find('td:eq(2)').text();
+                var name = $(this).find('td:eq(3)').text();
+
+                var d = {
+                    has_tab: false, // will be used in future
+                    song_group: null,
+                    artist: artist,
+                    alblum: ab,
+                    song_name: name,
+                    song_id: id
+                }		
+
+                data.push(d);
+            });
+
+            window.local_list = data;
+            // cached list
+            localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(data));
+            console.log("sync complete!");
+        }
+    });
+}
+if(window.local_list.length === 0) sync_song();
 
 // TODO rewrite it in mvc concept
 // global notification widget
@@ -49,7 +101,10 @@ var CHORD_URI = CHORDTABS_URI + "/song.php?song_id=";
 function chordtab_extract_data_from_html(html,word){
     // filter header of result table out
     var rows = $(html).find('tr:gt(0)')
-    var data = []
+    console.log(html)
+    $(html).appendTo('body');
+    return [];
+    var data = [];
     rows.each(function(i){
         var song_name = '', artist = ''
         song_name = $(this).find("td:eq(3)").text();
@@ -98,55 +153,13 @@ function search(q){
             return true;
      }
 
-     // reset old result
-     // songs = Song.search(q)
-     $.ajax({
-            url: SEARCH_URI,
-            data: 'xjxfun=writeSongDiv&xjxargs[]=' + encodeURI(q),
-            type: "POST",
-            error: function(){
-                console.log("server unreachable!")
-            },
-            beforeSend: function(){
-                $("#song-viewport").html("");
-                $("#load").show()
-                // Flash.show({message: "♫ ... ♫",persist: true})
-            },
-            success: function(res){
-                    $("#load").hide(0);
-                    var content = res.documentElement.textContent;
-                    var data = chordtab_extract_data_from_html(content,q);
-                    // TODO ui for not found
-                    if(data.length == 0){
-                        alert(q + " not found !")
-                        return false;
-                    }
-
-                    // search for tab and wait for sucess 
-                    var tabs;
-                    $.ajax({
-                        url: SEARCH_URI,
-                        data: 'xjxfun=writeTabDiv&xjxargs[]=' + encodeURI(q),
-                        async: false, 
-                        type: "POST",
-                        success: function(res){
-                            var content = res.documentElement.textContent;
-                            tabs = chordtab_extract_data_from_html(content,q);
-                        }
-                    });
-
-                    tabs = _.map(tabs,function(val,key,obj){ return obj[key].song_id });
-                    for(var i in data){
-                        if($.inArray(data[i].song_id,tabs) != -1) {
-                            data[i].has_tab = true;
-                        }
-                    }
-
-                    // render
-                    // knockout usage
-                    SongListController.binding(data);
-            }
+     var found_list = _.filter(local_list, function(r){ 
+         var reg_q =  new RegExp(q, 'i');
+         return reg_q.test(r.song_name) || reg_q.test(r.artist);
      });
+
+    SongListController.binding(found_list);
+
 }
 
 function fetch_prepared_songs (url) {

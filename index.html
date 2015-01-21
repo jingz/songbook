@@ -10,14 +10,23 @@
 		<script src="integrate-undercore-with-knockout.js" type="text/javascript" charset="utf-8"></script>
 		<script src="song_list_controller.js" type="text/javascript" charset="utf-8"></script>		
         <script src="app.js" type="text/javascript" charset="utf-8"></script>
+        <style type="text/css" media="screen">
+            .song-name {
+                color: #456;
+            }
+
+            #song-list li:hover {
+                color: black !important;
+            }
+        </style>
 
 		<script id="songs" type="text/html" charset="utf-8">
-			<% var n = 0;%>
+			<% var n = 0 ;%>
 			<ul id="song-list">
 			<% _.each(songs, function(s){ %>	
 				<li class='<%= n++%2 == 0 ? "even" : "odd" %>'>
 					<a href='#<%= s.song_id %>' data-bind="click: function(data,event){ fetch_chord(s,event) }">
-						<%= s.artist %> : <%= s.song_name %><%= s.has_tab ? "♮" : "" %>
+                        <span class='song-name'><%= s.song_name %></span>@<%= s.artist %> 
 					</a>
 				</li>
 			<% }) %>
