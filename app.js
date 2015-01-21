@@ -33,6 +33,7 @@ var RANDOM_URI = CHORDTABS_URI + "/admin/ui/randomsong.php";
 var COOL_URI = CHORDTABS_URI + "/admin/ui/coolsong.php";
 var HIT_URI = CHORDTABS_URI + "/admin/ui/hitsong.php";
 var CHORD_URI = CHORDTABS_URI + "/song.php?song_id="; 
+
 // Models decaration
 // var Song = $.extend(Model,{
 // 		url: CHORDTABS_URI,
@@ -103,6 +104,7 @@ function search(q){
          var reg_q =  new RegExp(q, 'i');
          return reg_q.test(r.song_name) || reg_q.test(r.artist);
      });
+     console.log(found_list);
 
     SongListController.binding(found_list);
 
@@ -124,7 +126,6 @@ function fetch_prepared_songs (url) {
             success: function(res){
                     $("#load").hide(0);
                     var content = res.documentElement.textContent;
-                    // var data = chordtab_extract_data_from_html(content,q);
                     var data = [];
                     $(content).find('a').each(function  () {
                         // <a href="http://www.chordtabs.in.th/song.php?posttype=webmaster&song_id=5145 "  target="_blank">Sunshine : เรื่องเก่า เศร้าใหม่ </a>

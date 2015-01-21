@@ -92,21 +92,25 @@ window.sync_song = function(){
              */
 
             $('#song', html).find('tr').each(function(){
-                var id = +$(this).find('td:eq(0)').text();
-                var artist = $(this).find('td:eq(1)').text();
-                var ab = $(this).find('td:eq(2)').text();
-                var name = $(this).find('td:eq(3)').text();
+                try {
+                    var artist = $(this).find('td:eq(1)').text();
+                    var ab = $(this).find('td:eq(2)').text();
+                    var name = $(this).find('td:eq(3)').text();
+                    var song_id = $(this).find('td:eq(3)').html().match(/song_id=(\d+)/)[1];
+                } catch(e) { console.log(e.message, name, ab, artist) }
 
-                var d = {
-                    has_tab: false, // will be used in future
-                    song_group: null,
-                    artist: artist,
-                    alblum: ab,
-                    song_name: name,
-                    song_id: id
-                }		
+                if(name){
+                    var d = {
+                        has_tab: false, // will be used in future
+                        song_group: null,
+                        artist: artist,
+                        alblum: ab,
+                        song_name: name,
+                        song_id: song_id
+                    }		
 
-                data.push(d);
+                    data.push(d);
+                }
             });
 
             window.local_list = data;
