@@ -66,3 +66,53 @@ var Song = {
 		this._where.push(sql);
 	}
 }
+
+window.LOCALSTORAGE_KEY = 'local_list';
+eval('window.' + LOCALSTORAGE_KEY + '= [];');
+window.test_db = function(){ var idx = parseInt((Math.random() * 15000)); return local_list[idx]; }
+window.restore_db = function(){ 
+    var data = JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY));
+    if(data) window.local_list = data;
+}
+window.sync_song = function(){
+    $.ajax({
+        url: 'http://chordtabs.in.th/admin/ui/tablesort.php',
+        success: function(html) {
+            console.log('found rows', $('#song', html).find('tr').length);
+            console.log('parsing ... and saving ...');
+            var data = [];
+            /*
+                <tr >
+                <td align="center">11491</td>
+                <td>Big Ass</td>
+                <td>XL</td>
+                <td><a href="/song.php?song_id=26" target="_blank">ก่อนตาย</a></td>
+                <td><a href="/song.php?song_id=26" target="_blank"></a></td>
+                </tr>
+             */
+
+            $('#song', html).find('tr').each(function(){
+                var id = +$(this).find('td:eq(0)').text();
+                var artist = $(this).find('td:eq(1)').text();
+                var ab = $(this).find('td:eq(2)').text();
+                var name = $(this).find('td:eq(3)').text();
+
+                var d = {
+                    has_tab: false, // will be used in future
+                    song_group: null,
+                    artist: artist,
+                    alblum: ab,
+                    song_name: name,
+                    song_id: id
+                }		
+
+                data.push(d);
+            });
+
+            window.local_list = data;
+            // cached list
+            localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(data));
+            console.log("sync complete!");
+        }
+    });
+}
