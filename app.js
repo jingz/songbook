@@ -90,15 +90,15 @@ function search(q){
             return true;
      }
 
-     if(q == ':hitz'){
-            fetch_prepared_songs(HIT_URI);
-            return true;
-     }
+     //if(q == ':hitz'){
+     //       fetch_prepared_songs(HIT_URI);
+     //       return true;
+     //}
 
-     if(q == ':cool'){
-            fetch_prepared_songs(COOL_URI);
-            return true;
-     }
+     //if(q == ':cool'){
+     //       fetch_prepared_songs(COOL_URI);
+     //       return true;
+     //}
 
      var found_list = _.filter(local_list, function(r){ 
          var reg_q =  new RegExp(q, 'i');
